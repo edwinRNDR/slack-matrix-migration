@@ -1071,7 +1071,7 @@ def main():
     for slack_room, matrix_room in roomLUT.items():
         log = logging.getLogger('SLACK.MIGRATE.MESSAGES.{}'.format(roomLUT2[slack_room]))
         log.info("Migrating messages for room: " + roomLUT2[slack_room])
-        fileList = sorted(load_zip_folder(config, roomLUT2[slack_room]))
+        fileList = sorted(load_zip_folder(roomLUT2[slack_room]))
         if fileList:
             tick = 1/len(fileList)
             migrate_messages(fileList, matrix_room, tick, log)
@@ -1085,7 +1085,7 @@ def main():
     else:
         log.info("Migrating messages to DMs. This may take a while...")
     for slack_room, matrix_room in dmLUT.items():
-        fileList = sorted(load_zip_folder(config, slack_room))
+        fileList = sorted(load_zip_folder(slack_room))
         if fileList:
             tick = 1/len(fileList)
             migrate_messages(fileList, matrix_room, tick, log)
