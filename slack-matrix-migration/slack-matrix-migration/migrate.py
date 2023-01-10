@@ -1014,6 +1014,7 @@ def main():
     log.info("maxUploadSize {}".format(maxUploadSize))
     
     # create users in matrix and match them to slack users
+    pdb.set_trace()
     if "users.json" in slack_json and not userLUT:
         if config["run-unattended"]:
             log.info("Creating Users")
@@ -1065,7 +1066,7 @@ def main():
         log.info("Migrating messages to rooms. This may take a while...")
     else:
         input(
-            'Migrating messages to rooms. This may take a while.'
+            'Migrating messages to rooms. This may take a while. '
             'Press enter to proceed\n'
         ) 
     for slack_room, matrix_room in roomLUT.items():
