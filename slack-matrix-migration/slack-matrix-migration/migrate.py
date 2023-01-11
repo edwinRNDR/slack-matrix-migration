@@ -1014,7 +1014,6 @@ def main():
     log.info("maxUploadSize {}".format(maxUploadSize))
     
     # create users in matrix and match them to slack users
-    pdb.set_trace()
     if "users.json" in slack_json and not userLUT:
         if config["run-unattended"]:
             log.info("Creating Users")
