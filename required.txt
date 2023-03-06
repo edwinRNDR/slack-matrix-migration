@@ -2,3 +2,5 @@ PyYAML
 requests
 emoji
 slackdown
+alive_progress
+python-dotenv
