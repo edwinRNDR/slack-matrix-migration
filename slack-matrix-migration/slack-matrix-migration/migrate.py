@@ -257,6 +257,7 @@ def register_user(
     access_token,
     admin=False,
     user_type=None,
+    email=None
 ):
 
     url = "%s/_synapse/admin/v2/users/@%s:%s" % (
@@ -270,6 +271,15 @@ def register_user(
         "displayname": "".join([displayname, config["name-suffix"]]),
         "admin": admin,
     }
+    if email is not None:
+        data["threepids"] = [
+            {
+                "medium": "email",
+                "address": email
+            }
+        ]
+
+
     try:
         r = requests.put(url, json=data, headers=headers, verify=config["verify-ssl"])
     except requests.exceptions.RequestException as e:
@@ -451,7 +461,8 @@ def migrate_users(userFile, access_token):
                 res = register_user(
                     userDetails["matrix_user"], userDetails["matrix_password"],
                     userDetails["slack_real_name"], config["homeserver"],
-                    access_token
+                    access_token,
+                    email=_email if len(_email) > 0 else None
                 )
                 if res is False:
                     log.error("ERROR while registering user '" + userDetails["matrix_id"] + "'")
@@ -898,7 +909,7 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
                     for user in reaction["users"]:
                         #log.info("Send reaction in room " + roomId)
                         send_reaction(roomId, eventId, emojize(
-                            reaction["name"], language='alias'), userLUT[user],
+                            ":" + reaction["name"] + ":", language='alias'), userLUT[user],
                             txnId
                         )
                         txnId = txnId + 1
