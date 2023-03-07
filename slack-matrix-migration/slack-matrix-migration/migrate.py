@@ -860,8 +860,8 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
             replyEvent = threadLUT[message["parent_user_id"]+message["thread_ts"]]
             fallbackHtml = get_fallback_html(matrix_room, replyEvent)
             fallbackText = get_fallback_text(replyEvent)
-            body = fallbackText + "\n\n" + body
-            formatted_body = fallbackHtml + formatted_body
+            #body = fallbackText + "\n\n" + body
+            #formatted_body = fallbackHtml + formatted_body
             content = {
                 "m.relates_to": {
                     "rel_type": "m.thread",
