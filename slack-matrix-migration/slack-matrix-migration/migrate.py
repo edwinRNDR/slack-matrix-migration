@@ -422,7 +422,7 @@ def migrate_users(userFile, access_token):
                 bar()
                 continue
 
-            _servername = config["homeserver"].split('/')[2]
+            _servername = config["domain"]
             _matrix_user = user["name"]
             _matrix_id = '@' + user["name"] + ':' + _servername
 
