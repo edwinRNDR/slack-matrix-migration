@@ -823,8 +823,9 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
                     if not previous_message:
                         previous_message = first_message
                     replyLUT[current_message] = previous_message
-                    if config["threads-reply-to-previous"]:
-                        previous_message = current_message
+
+                    #if config["threads-reply-to-previous"]:
+                    #    previous_message = current_message
 
         # replys / threading
         if (
@@ -863,9 +864,8 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
             formatted_body = fallbackHtml + formatted_body
             content = {
                 "m.relates_to": {
-                    "m.in_reply_to": {
-                        "event_id": matrix_event_id,
-                    },
+                    "rel_type": "m.thread",
+                    "event_id": matrix_event_id,
                 },
                 "msgtype": "m.text",
                 "body": body,
