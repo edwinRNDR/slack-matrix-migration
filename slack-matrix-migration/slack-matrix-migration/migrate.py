@@ -950,10 +950,11 @@ def migrate_messages(fileList, matrix_room, tick, log):
                     txnId = parse_and_send_message(
                         message, matrix_room, txnId, False, log
                     )
-                except:
+                except Exception as e:
                     log.error(
                         "Warning: Couldn't send  message: {} to matrix_room {} id:{}".format(message, matrix_room, txnId)
                     )
+                    print(e)
 
             progress = progress + tick
             # update_progress(progress)
