@@ -53,7 +53,7 @@ log.addHandler(fileHandler)
  * @return {Object} Matrix event content, as per https://matrix.org/docs/spec/#m-image
 '''
 
-def slackImageToMatrixImage(file, url, thumbnailUrl):
+def slackImageToMatrixImage(file, url, thumbnailUrl, matrix_thread=None):
     message = {
         "body": file["title"],
         "info": {
@@ -64,6 +64,11 @@ def slackImageToMatrixImage(file, url, thumbnailUrl):
         "url": url,
         # TODO: Define some matrix types
     }
+    if matrix_thread is not None:
+        message["m.relates_to"] = {
+            "rel_type": "m.thread",
+            "event_id": matrix_thread
+        }
 
     if "original_w" in file:
         message["info"]["w"] = file["original_w"]
@@ -96,7 +101,7 @@ def slackImageToMatrixImage(file, url, thumbnailUrl):
  * @return Matrix event content, as per https://matrix.org/docs/spec/client_server/r0.4.0.html#m-video
 '''
 
-def slackImageToMatrixVideo(file, url, thumbnailUrl):
+def slackImageToMatrixVideo(file, url, thumbnailUrl, matrix_thread=None):
     message = {
         "body": file["title"],
         "info": {
@@ -108,6 +113,11 @@ def slackImageToMatrixVideo(file, url, thumbnailUrl):
         # TODO: Define some matrix types
     }
 
+    if matrix_thread is not None:
+        message["m.relates_to"] = {
+            "rel_type": "m.thread",
+            "event_id": matrix_thread
+        }
 
     if "original_w" in file:
         message["info"]["w"] = file["original_w"]
@@ -132,8 +142,8 @@ def slackImageToMatrixVideo(file, url, thumbnailUrl):
  * @return {Object} Matrix event content, as per https://matrix.org/docs/spec/client_server/r0.4.0.html#m-audio
 '''
 
-def slackImageToMatrixAudio(file, url):
-    return {
+def slackImageToMatrixAudio(file, url, matrix_thread=None):
+    message = {
         "body": file["title"],
         "info": {
             "mimetype": file["mimetype"],
@@ -142,6 +152,12 @@ def slackImageToMatrixAudio(file, url):
         "msgtype": "m.audio",
         "url": url,
     }
+    if matrix_thread is not None:
+        message["m.relates_to"] = {
+            "rel_type": "m.thread",
+            "event_id": matrix_thread
+        }
+    return message
 
 '''
  * Converts a slack file upload to a matrix file upload event.
@@ -152,16 +168,16 @@ def slackImageToMatrixAudio(file, url):
  * @return Matrix event content, as per https://matrix.org/docs/spec/#m-file
 '''
 
-def slackFileToMatrixMessage(file, url, thumbnailUrl):
+def slackFileToMatrixMessage(file, url, thumbnailUrl, matrix_thread=None):
     if "mimetype" in file:
         if file["mimetype"].startswith("image/"):
-            return slackImageToMatrixImage(file, url, thumbnailUrl)
+            return slackImageToMatrixImage(file, url, thumbnailUrl, matrix_thread)
         if file["mimetype"].startswith("video/"):
-                return slackImageToMatrixVideo(file, url, thumbnailUrl)
+            return slackImageToMatrixVideo(file, url, thumbnailUrl, matrix_thread)
         if file["mimetype"].startswith("audio/"):
-            return slackImageToMatrixAudio(file, url)
+            return slackImageToMatrixAudio(file, url, matrix_thread)
 
-    return  {
+    message = {
         "body": file["title"],
         "info": {
             "mimetype": file["mimetype"],
@@ -170,6 +186,13 @@ def slackFileToMatrixMessage(file, url, thumbnailUrl):
         "msgtype": "m.file",
         "url": url,
     }
+    if matrix_thread is not None:
+        message["m.relates_to"] = {
+            "rel_type": "m.thread",
+            "event_id": matrix_thread
+        }
+
+    return message
 
 def uploadContentFromURI(content, uri, config, user):
     res = requests.get(uri)
@@ -206,14 +229,14 @@ def uploadContentFromURI(content, uri, config, user):
         else:
             return r.json()["content_uri"]
 
-def process_attachments(attachments, roomId, userId, body, txnId, config):
+def process_attachments(attachments, roomId, userId, body, txnId, config, matrix_thread=None):
     for file in attachments:
-        txnId = process_file(file, roomId, userId, body, txnId, config)
+        txnId = process_file(file, roomId, userId, body, txnId, config, matrix_thread)
     return txnId
 
-def process_files(files, roomId, userId, body, txnId, config):
+def process_files(files, roomId, userId, body, txnId, config, matrix_thread=None):
     for file in files:
-        txnId = process_file(file, roomId, userId, body, txnId, config)
+        txnId = process_file(file, roomId, userId, body, txnId, config, matrix_thread)
     return txnId
 
 def get_link(file):
@@ -223,7 +246,7 @@ def get_link(file):
         link = file["url_private"]
     return link
 
-def process_snippet(file, roomId, userId, body, txnId, config, ts):
+def process_snippet(file, roomId, userId, body, txnId, config, ts, matrix_thread):
     htmlString = ""
     res = requests.get(file["url_private"])
     if res.status_code != 200:
@@ -254,6 +277,12 @@ def process_snippet(file, roomId, userId, body, txnId, config, ts):
         "formatted_body": htmlCode,
         "msgtype": "m.text",
     }
+    if matrix_thread is not None:
+        messageContent["m.relates_to"] = {
+            "rel_type": "m.thread",
+            "event_id": matrix_thread
+        }
+
 
     # send message to room
     res = send_event(config, messageContent, roomId, userId, "m.room.message", txnId, ts)
@@ -266,7 +295,7 @@ def process_snippet(file, roomId, userId, body, txnId, config, ts):
 
     return txnId
 
-def process_upload(file, roomId, userId, body, txnId, config, ts):
+def process_upload(file, roomId, userId, body, txnId, config, ts, matrix_thread=None):
     if "maxUploadSize" in config and file["size"] > config["maxUploadSize"]:
         link = get_link(file)
         log.info("WARNING: File too large, sending as a link: " + link);
@@ -276,6 +305,12 @@ def process_upload(file, roomId, userId, body, txnId, config, ts):
             "formatted_body": '<a href="' + link + '">' + file["name"] + '</a>',
             "msgtype": "m.text",
         }
+        if matrix_thread is not None:
+            messageContent["m.relates_to"] = {
+                "rel_type": "m.thread",
+                "event_id": matrix_thread
+            }
+
         res = send_event(config, messageContent, roomId, userId, "m.room.message", txnId, ts)
         if res == False:
             log.info("ERROR while sending file link to room '" + roomId)
@@ -299,7 +334,7 @@ def process_upload(file, roomId, userId, body, txnId, config, ts):
 
         fileContentUri = uploadContentFromURI({"title": file["title"], "mimetype": file["mimetype"]}, file["url_private"], config, userId)
 
-        messageContent = slackFileToMatrixMessage(file, fileContentUri, thumbnailContentUri)
+        messageContent = slackFileToMatrixMessage(file, fileContentUri, thumbnailContentUri, matrix_thread)
 
         res = send_event(config, messageContent, roomId, userId, "m.room.message", txnId, ts)
         if res == False:
@@ -308,7 +343,7 @@ def process_upload(file, roomId, userId, body, txnId, config, ts):
     txnId = txnId + 1
     return txnId
 
-def process_file(file, roomId, userId, body, txnId, config):
+def process_file(file, roomId, userId, body, txnId, config, matrix_thread=None):
     if not "url_private" in file:
         # we have no url to process the file
         return txnId
@@ -318,7 +353,7 @@ def process_file(file, roomId, userId, body, txnId, config):
     if file["mode"] == "snippet":
         txnId = process_snippet(file, roomId, userId, body, txnId, config, ts)
     else:
-        txnId = process_upload(file, roomId, userId, body, txnId, config, ts)
+        txnId = process_upload(file, roomId, userId, body, txnId, config, ts, matrix_thread)
 
     txnId = txnId + 1
     return txnId

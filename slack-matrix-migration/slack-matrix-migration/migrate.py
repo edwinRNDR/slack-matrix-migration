@@ -772,46 +772,6 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
         body = body.replace("<!everyone>", "@room")
         body = re.sub('<@[A-Z0-9]+>', replace_mention, body)
 
-        if "files" in message:
-            if "subtype" in message:
-                log.info(message["subtype"])
-                if (
-                    message["subtype"] == "file_comment" or
-                    message["subtype"] == "thread_broadcast"
-                ):
-                    #TODO treat as reply
-                    log.info("")
-                else:
-                    txnId = process_files(
-                        message["files"], matrix_room,
-                        userLUT[message["user"]], body, txnId, config
-                    )
-            else:
-                txnId = process_files(
-                    message["files"], matrix_room, userLUT[message["user"]],
-                    body, txnId, config
-                )
-
-        if "attachments" in message:
-            if message["user"] in userLUT:  # ignore attachments from bots
-                txnId = process_attachments(
-                    message["attachments"], matrix_room,
-                    userLUT[message["user"]], body, txnId, config
-                )
-                for attachment in message["attachments"]:
-                    if "is_share" in attachment and attachment["is_share"]:
-                        if body:
-                            body += "\n"
-                        attachment_footer = "no footer"
-                        if "footer" in attachment:
-                            attachment_footer = attachment["footer"]
-                        attachment_text = "no text"
-                        if "text" in attachment:
-                            attachment_text = attachment["text"]
-                        body += "".join([
-                            "&gt; _Shared (", attachment_footer, "):_ ",
-                            attachment_text, "\n"
-                        ])
 
         if "replies" in message:  # this is the parent of a thread
             is_thread = True
@@ -840,6 +800,52 @@ def parse_and_send_message(message, matrix_room, txnId, is_later, log):
                 return txnId
             slack_event_id = replyLUT[message["user"] + message["ts"]]
             matrix_event_id = eventLUT[slack_event_id]
+
+
+        if "files" in message:
+
+            matrix_thread = matrix_event_id if is_reply else None
+
+            if "subtype" in message:
+                log.info(message["subtype"])
+                if (
+                    message["subtype"] == "file_comment" or
+                    message["subtype"] == "thread_broadcast"
+                ):
+                    #TODO treat as reply
+                    log.info("")
+                else:
+                    txnId = process_files(
+                        message["files"], matrix_room,
+                        userLUT[message["user"]], body, txnId, config, matrix_thread
+                    )
+            else:
+                txnId = process_files(
+                    message["files"], matrix_room, userLUT[message["user"]],
+                    body, txnId, config, matrix_thread
+                )
+
+        if "attachments" in message:
+            if message["user"] in userLUT:  # ignore attachments from bots
+                txnId = process_attachments(
+                    message["attachments"], matrix_room,
+                    userLUT[message["user"]], body, txnId, config
+                )
+                for attachment in message["attachments"]:
+                    if "is_share" in attachment and attachment["is_share"]:
+                        if body:
+                            body += "\n"
+                        attachment_footer = "no footer"
+                        if "footer" in attachment:
+                            attachment_footer = attachment["footer"]
+                        attachment_text = "no text"
+                        if "text" in attachment:
+                            attachment_text = attachment["text"]
+                        body += "".join([
+                            "&gt; _Shared (", attachment_footer, "):_ ",
+                            attachment_text, "\n"
+                        ])
+
 
         # TODO pinned / stared items?
 
