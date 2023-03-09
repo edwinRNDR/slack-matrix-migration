@@ -351,7 +351,7 @@ def process_file(file, roomId, userId, body, txnId, config, matrix_thread=None):
     ts = str(file["timestamp"]) + "000"
 
     if file["mode"] == "snippet":
-        txnId = process_snippet(file, roomId, userId, body, txnId, config, ts)
+        txnId = process_snippet(file, roomId, userId, body, txnId, config, ts, matrix_thread)
     else:
         txnId = process_upload(file, roomId, userId, body, txnId, config, ts, matrix_thread)
 
